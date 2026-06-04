@@ -1,0 +1,138 @@
+╔════════════════════════════════════════════════════════════════════════════════╗
+║                  DOCTOCLIQ PRO - SISTEMA DENTAL COMPLETO                       ║
+║                      GUÍA RÁPIDA DE INICIO DE SESIÓN                           ║
+╚════════════════════════════════════════════════════════════════════════════════╝
+
+📂 ARCHIVO PRINCIPAL:
+   → index.html
+
+🚀 CÓMO ABRIR EL SISTEMA:
+   1. Abre el archivo "index.html" en tu navegador web (Chrome, Firefox, Edge)
+   2. El sistema cargará automáticamente
+
+🔐 CREDENCIALES DE ACCESO:
+   Usuario:     admin
+   Contraseña:  admin
+
+   (Estos datos pueden cambiarse en el código)
+
+═══════════════════════════════════════════════════════════════════════════════
+
+✨ CARACTERÍSTICAS PRINCIPALES:
+
+1️⃣  PACIENTES
+   • Registro con DNI, teléfono, email, dirección
+   • Búsqueda rápida por nombre, DNI o teléfono
+   • Historial de citas por paciente
+   • Validación de DNI único
+
+2️⃣  AGENDA Y CITAS
+   • Agendamiento con fecha y hora
+   • Cambiar estado: Pendiente → Confirmada
+   • Enviar recordatorio por WhatsApp
+   • Prevención de citas duplicadas
+
+3️⃣  ODONTOGRAMA DIGITAL
+   • 32 dientes con 5 caras cada uno
+   • Estados: Sano, Caries, Curado, Extracción
+   • Carga INSTANTÁNEA
+   • Guardado automático
+
+4️⃣  RECETARIO
+   • Emisión de recetas profesionales
+   • Impresión en formato hospitalario
+   • Historial completo
+
+5️⃣  TRATAMIENTOS Y PRECIOS
+   • Catálogo de servicios
+   • 6 especialidades incluidas
+   • Precios ajustables
+
+6️⃣  MÓDULO DE FINANZAS
+   • Ingresos y egresos
+   • Balance de caja en tiempo real
+   • 4 métodos de pago disponibles
+
+7️⃣  INVENTARIO
+   • Control de insumos
+   • Stock y valor total
+   • Alertas de inventario
+
+8️⃣  PERSONAL
+   • Registro de odontólogos
+   • Cálculo de comisiones
+   • Asignación de especialidades
+
+9️⃣  EXPORTACIÓN DE DATOS
+   • Descarga en formato CSV/Excel
+   • Todos los módulos disponibles
+
+═══════════════════════════════════════════════════════════════════════════════
+
+📊 DATOS DE PRUEBA INCLUIDOS:
+
+✓ 1 Paciente de prueba (DNI: 12345678)
+✓ 3 Tratamientos predefinidos
+✓ 1 Cita de ejemplo
+✓ 1 Insumo en stock
+
+Puedes eliminarlos y crear tus propios datos.
+
+═══════════════════════════════════════════════════════════════════════════════
+
+🎯 PRIMER USO - PASOS RECOMENDADOS:
+
+1. Inicia sesión con: admin / admin
+2. Explora el Dashboard para ver estadísticas
+3. Ve a "Pacientes" y regresa un paciente NUEVO con su DNI
+4. Agrega una CITA en el paciente
+5. Abre el ODONTOGRAMA y selecciona el paciente
+6. Haz clic en los dientes para diagnosticar (4 estados)
+7. Prueba la RECETA médica y imprimela
+8. Registra un INGRESO en Finanzas
+9. Exporta datos a Excel desde Reportes
+
+═══════════════════════════════════════════════════════════════════════════════
+
+💾 ALMACENAMIENTO:
+
+• Todos los datos se guardan en el navegador (LocalStorage)
+• NO requiere servidor
+• Copia automática cada vez que guardas
+• Puedes exportar a Excel para respaldo
+
+═══════════════════════════════════════════════════════════════════════════════
+
+⚡ RENDIMIENTO:
+
+✓ Carga instantánea del odontograma
+✓ Sin lag en operaciones
+✓ Optimizado para 1000+ pacientes
+✓ Búsqueda en tiempo real
+
+═══════════════════════════════════════════════════════════════════════════════
+
+📝 NOTAS:
+
+- El sistema está COMPLETAMENTE FUNCIONAL
+- Está LISTO PARA VENDER
+- Toda la información permanece en tu equipo
+- No hay conexión a internet requerida
+- Los datos persisten entre cierres y aperturas
+
+═══════════════════════════════════════════════════════════════════════════════
+
+🎨 PERSONALIZACIÓN:
+
+Si necesitas cambiar:
+- Colores: Edita :root { } en el CSS (línea ~12)
+- Nombre: Cambia "Doctocliq Pro" en el título
+- Logo: Usa Font Awesome en el código
+
+═══════════════════════════════════════════════════════════════════════════════
+
+✅ LISTO PARA USAR - ¡COMIENZA AHORA MISMO!
+
+Abre index.html → Accede con admin/admin → ¡A trabajar!
+
+═══════════════════════════════════════════════════════════════════════════════
