@@ -1027,19 +1027,7 @@
         const safeData = (key, defaultVal) => { try { let i = localStorage.getItem(key); return (i && i!=="undefined" && i!=="null") ? JSON.parse(i) : defaultVal; } catch(e) { return defaultVal; } };
 
         window.app = {
-            data: { 
-                patients: safeData('db_pat', []), 
-                apps: safeData('db_app', []), 
-                treats: safeData('db_trt', []), 
-                fins: safeData('db_fin', []), 
-                odo: safeData('db_odo', {}), 
-                hc: safeData('db_hc', {}), 
-                pres: safeData('db_pres', []), 
-                inv: safeData('db_inv', []), 
-                settings: safeData('db_set', { alertAdvance: '60', autoDelete: '0' }),
-                tokens: safeData('db_tokens', []), 
-                logo: localStorage.getItem('clinic_logo') || '' 
-            },
+            data: {}, // Se inicializa en init()
             
             currentDateDash: new Date(), 
             currentDateAgenda: new Date(), 
@@ -1061,6 +1049,21 @@
 
             init: function() {
                 const urlParams = new URLSearchParams(window.location.search);
+                
+                // CARGAR DATOS
+                this.data = { 
+                    patients: safeData('db_pat', []), 
+                    apps: safeData('db_app', []), 
+                    treats: safeData('db_trt', []), 
+                    fins: safeData('db_fin', []), 
+                    odo: safeData('db_odo', {}), 
+                    hc: safeData('db_hc', {}), 
+                    pres: safeData('db_pres', []), 
+                    inv: safeData('db_inv', []), 
+                    settings: safeData('db_set', { alertAdvance: '60', autoDelete: '0' }),
+                    tokens: safeData('db_tokens', []), 
+                    logo: localStorage.getItem('clinic_logo') || '' 
+                };
                 
                 // Cargar logo inmediatamente (funciona en login y en app)
                 this.applyLogo();
@@ -1090,6 +1093,7 @@
                     return;
                 }
 
+                // MODO ADMINISTRADOR
                 if(localStorage.getItem('theme') === 'dark') { 
                     document.documentElement.setAttribute('data-theme', 'dark'); 
                     document.getElementById('darkModeToggle').checked = true; 
@@ -1114,6 +1118,13 @@
                     this.startRealTimeFeatures();
                     this.setupKeyboardShortcuts();
                     this.nav('dashboard'); 
+                } else {
+                    // MOSTRAR PANTALLA DE LOGIN
+                    document.getElementById('confirmScreen').style.display = 'none';
+                    document.getElementById('registerScreen').style.display = 'none';
+                    document.getElementById('anamnesisScreen').style.display = 'none';
+                    document.getElementById('loginScreen').style.display = 'flex';
+                    document.getElementById('appContainer').style.display = 'none';
                 }
             },
 
@@ -1129,13 +1140,32 @@
                 let phone = document.getElementById('sr-phone').value.trim();
                 if(!phone) return alert("Ingrese el número del paciente.");
                 
+                // Limpiar teléfono: solo números, y agregar +51 si no tiene
+                let cleanPhone = phone.replace(/\D/g, '');
+                if(cleanPhone.startsWith('51')) {
+                    cleanPhone = cleanPhone.substring(2);
+                }
+                if(!cleanPhone) return alert("Número de teléfono inválido.");
+                
                 let token = this.generateUniqueToken('reg');
                 let link = window.location.origin + window.location.pathname + `?registro=true&t=${token}`;
-                let msg = encodeURIComponent(`Hola, somos de la Clínica Odontológica. Por favor, ingresa a este link seguro para completar tu registro de paciente nuevo. Este enlace es válido para un solo uso:\n\n${link}`);
                 
-                window.open(`https://wa.me/51${phone.replace(/\D/g,'')}?text=${msg}`, '_blank');
+                let msg = `Hola, somos de la Clínica Odontológica.\n\nPor favor, ingresa a este link seguro para completar tu registro como paciente nuevo.\n\nEste enlace es válido para un solo uso:\n\n${link}\n\nSi tienes problemas para abrir el link, cópialo y pégalo en tu navegador.`;
+                
+                // Intentar abrir WhatsApp Web
+                try {
+                    let waUrl = `https://wa.me/51${cleanPhone}?text=${encodeURIComponent(msg)}`;
+                    window.open(waUrl, '_blank');
+                    setTimeout(() => {
+                        if(!document.hidden) {
+                            this.showToast("Link enviado por WhatsApp ✓");
+                        }
+                    }, 500);
+                } catch(e) {
+                    alert("No se pudo abrir WhatsApp. Intenta nuevamente o copia el número: 51" + cleanPhone);
+                }
+                
                 this.closeModal('modal-send-reg');
-                this.showToast("Link de registro generado.");
             },
 
             generateAnamLink: function() {
@@ -1143,26 +1173,62 @@
                 let phone = document.getElementById('sa-phone').value.trim();
                 if(!pid || !phone) return alert("Faltan datos del paciente.");
 
+                // Limpiar teléfono
+                let cleanPhone = phone.replace(/\D/g, '');
+                if(cleanPhone.startsWith('51')) {
+                    cleanPhone = cleanPhone.substring(2);
+                }
+                if(!cleanPhone) return alert("Número de teléfono inválido.");
+
                 let token = this.generateUniqueToken('anam', pid);
                 let link = window.location.origin + window.location.pathname + `?anamnesis=true&t=${token}`;
-                let msg = encodeURIComponent(`Hola, somos de la Clínica Odontológica. Por favor, ingresa a este link para completar tu Cuestionario de Salud y firmar tu acta de compromiso antes de la atención. Si necesitas corregir algo, tus datos anteriores ya están precargados:\n\n${link}`);
                 
-                window.open(`https://wa.me/51${phone.replace(/\D/g,'')}?text=${msg}`, '_blank');
+                let msg = `Hola, somos de la Clínica Odontológica.\n\n📋 Antes de tu cita, necesitamos que completes tu:\n• Cuestionario de Salud\n• Firmado digital del Acta de Consentimiento\n\nIngresa a este link seguro:\n${link}\n\nSi ya habías iniciado el formulario, tus datos anteriores ya están precargados. Puedes corregir lo que necesites.\n\nEste enlace es válido solo para ti.`;
+                
+                try {
+                    let waUrl = `https://wa.me/51${cleanPhone}?text=${encodeURIComponent(msg)}`;
+                    window.open(waUrl, '_blank');
+                    setTimeout(() => {
+                        if(!document.hidden) {
+                            this.showToast("Cuestionario enviado por WhatsApp ✓");
+                        }
+                    }, 500);
+                } catch(e) {
+                    alert("No se pudo abrir WhatsApp. Intenta nuevamente.");
+                }
+                
                 this.closeModal('modal-send-anam');
-                this.showToast("Link de cuestionario generado.");
             },
 
             // --- PANTALLAS PÚBLICAS ---
             setupPublicRegistration: function(tokenStr) {
+                // CARGAR DATOS ACTUALIZADOS
+                this.data.tokens = safeData('db_tokens', []);
+                this.data.patients = safeData('db_pat', []);
+                
                 let tk = this.data.tokens.find(x => x.token === tokenStr && x.type === 'reg');
-                if(!tk || tk.used) {
+                
+                if(!tk) {
                     document.getElementById('registerScreen').style.display = 'flex';
                     document.getElementById('panelRegistroPaciente').style.display = 'none';
+                    document.getElementById('mensajeErrorLink').innerText = "❌ Token no válido";
                     document.getElementById('mensajeErrorLink').style.display = 'block';
-                } else {
-                    document.getElementById('registerScreen').style.display = 'flex';
-                    document.getElementById('pub-reg-token').value = tokenStr;
+                    return;
                 }
+                
+                if(tk.used) {
+                    document.getElementById('registerScreen').style.display = 'flex';
+                    document.getElementById('panelRegistroPaciente').style.display = 'none';
+                    document.getElementById('mensajeErrorLink').innerText = "✓ Este enlace ya fue utilizado\n\nSi es tu primer registro, contacta a la clínica.\n\nSi necesitas actualizar tu información, solicita un nuevo enlace.";
+                    document.getElementById('mensajeErrorLink').style.display = 'block';
+                    return;
+                }
+                
+                document.getElementById('registerScreen').style.display = 'flex';
+                document.getElementById('pub-reg-token').value = tokenStr;
+                document.getElementById('panelRegistroPaciente').style.display = 'block';
+                document.getElementById('mensajeExitoRegistro').style.display = 'none';
+                document.getElementById('mensajeErrorLink').style.display = 'none';
             },
 
             submitPublicRegistration: function() {
@@ -1172,103 +1238,196 @@
                 let age = document.getElementById('pub-reg-age').value.trim();
                 let phone = document.getElementById('pub-reg-phone').value.trim();
 
-                if(!dni || !name) return alert("El DNI y los Nombres son obligatorios.");
+                // VALIDACIÓN COMPLETA
+                if(!dni) return alert("⚠️ El DNI es obligatorio.");
+                if(dni.length < 8) return alert("⚠️ El DNI debe tener al menos 8 caracteres.");
+                if(!name) return alert("⚠️ Los Nombres y Apellidos son obligatorios.");
+                if(name.length < 5) return alert("⚠️ Debes escribir tu nombre completo.");
+                if(!age) return alert("⚠️ La edad es obligatoria.");
+                if(isNaN(age) || age < 1 || age > 120) return alert("⚠️ La edad debe ser un número válido (1-120).");
+                if(!phone) return alert("⚠️ El número de WhatsApp es obligatorio.");
+                
+                // LIMPIAR TELÉFONO
+                let cleanPhone = phone.replace(/\D/g, '');
+                if(cleanPhone.length < 7) return alert("⚠️ El número de teléfono no es válido.");
 
                 this.data.tokens = safeData('db_tokens', []);
                 this.data.patients = safeData('db_pat', []);
 
                 let tk = this.data.tokens.find(x => x.token === tokenStr && x.type === 'reg');
-                if(!tk || tk.used) return alert("Este enlace ya fue procesado.");
-                if(this.data.patients.some(p => p.dni === dni)) return alert("El DNI ya se encuentra registrado.");
+                if(!tk) return alert("❌ Token no encontrado. Solicita un nuevo enlace a la clínica.");
+                if(tk.used) return alert("❌ Este enlace ya fue utilizado. Solicita un nuevo enlace.");
+                
+                if(this.data.patients.some(p => p.dni === dni)) {
+                    return alert("⚠️ El DNI " + dni + " ya se encuentra registrado en el sistema.\n\nSi es tu primer registro, contacta a la clínica para verificar tus datos.");
+                }
 
-                this.data.patients.push({ id: Date.now(), dni, name, photo: '', age: age || '-', phone: phone || '-', isArchived: false });
+                // REGISTRAR PACIENTE
+                this.data.patients.push({ 
+                    id: Date.now(), 
+                    dni: dni, 
+                    name: name, 
+                    photo: '', 
+                    age: age || '-', 
+                    phone: cleanPhone || '-', 
+                    isArchived: false,
+                    registroFecha: new Date().toISOString()
+                });
                 tk.used = true;
                 
                 this.saveDB();
 
                 document.getElementById('panelRegistroPaciente').style.display = 'none';
                 document.getElementById('mensajeExitoRegistro').style.display = 'block';
+                
+                // CONFIRMACIÓN
+                setTimeout(() => {
+                    alert(`✅ ¡Registro exitoso!\n\nNombre: ${name}\nDNI: ${dni}\n\nYa estás en el sistema de la clínica. Pronto recibirás tu cuestionario de salud.`);
+                }, 500);
             },
 
             setupPublicAnamnesis: function(tokenStr) {
+                // CARGAR DATOS DEL SISTEMA
+                this.data.tokens = safeData('db_tokens', []);
+                this.data.patients = safeData('db_pat', []);
+                this.data.hc = safeData('db_hc', {});
+                
                 let tk = this.data.tokens.find(x => x.token === tokenStr && x.type === 'anam');
-                if(!tk || tk.used || !tk.patId) {
+                
+                if(!tk || !tk.patId) {
                     document.getElementById('anamnesisScreen').style.display = 'flex';
                     document.getElementById('panelAnamnesisPaciente').style.display = 'none';
                     document.getElementById('mensajeErrorLink').style.display = 'block';
-                } else {
-                    let pat = this.data.patients.find(p => p.id == tk.patId);
-                    if(!pat) return alert("Paciente no encontrado.");
-
+                    return;
+                }
+                
+                if(tk.used) {
                     document.getElementById('anamnesisScreen').style.display = 'flex';
-                    document.getElementById('lblAnamnesisPaciente').innerText = pat.name;
-                    document.getElementById('pub-anam-token').value = tokenStr;
+                    document.getElementById('panelAnamnesisPaciente').style.display = 'none';
+                    document.getElementById('mensajeErrorLink').innerText = "✓ Este cuestionario ya fue respondido\n\nSi necesitas hacer cambios, solicita un nuevo enlace a la clínica.";
+                    document.getElementById('mensajeErrorLink').style.display = 'block';
+                    return;
+                }
+                
+                let pat = this.data.patients.find(p => p.id == tk.patId);
+                if(!pat) {
+                    document.getElementById('anamnesisScreen').style.display = 'flex';
+                    document.getElementById('panelAnamnesisPaciente').style.display = 'none';
+                    document.getElementById('mensajeErrorLink').innerText = "❌ Paciente no encontrado en el sistema";
+                    document.getElementById('mensajeErrorLink').style.display = 'block';
+                    return;
+                }
 
-                    // AQUI CARGAMOS LOS DATOS PREVIOS SI EL PACIENTE SE EQUIVOCÓ Y LE MANDAMOS DE NUEVO EL LINK
-                    let hc = this.data.hc[tk.patId];
-                    if(hc) {
-                        document.getElementById('pub-anam-motivo').value = hc.motivo || '';
-                        document.getElementById('pub-anam-alergias').value = hc.alergias || '';
-                        
-                        let enfArray = (hc.enfermedades || '').split(', ').map(x=>x.trim());
-                        document.querySelectorAll('.anam-chk').forEach(chk => {
-                            if(enfArray.includes(chk.value)) {
-                                chk.checked = true;
-                                enfArray = enfArray.filter(x => x !== chk.value);
-                            }
-                        });
-                        document.getElementById('pub-anam-enf-otros').value = enfArray.join(', ');
+                document.getElementById('anamnesisScreen').style.display = 'flex';
+                document.getElementById('lblAnamnesisPaciente').innerText = pat.name;
+                document.getElementById('pub-anam-token').value = tokenStr;
 
-                        if(hc.consentData) {
-                            for(let i=1; i<=10; i++) {
-                                let el = document.getElementById('pub-anam-c'+i);
-                                if(el) el.checked = hc.consentData['c'+i] || false;
-                            }
+                // CARGAR DATOS PREVIOS SI EXISTEN (Para correcciones)
+                let hc = this.data.hc[tk.patId];
+                if(hc) {
+                    document.getElementById('pub-anam-motivo').value = hc.motivo || '';
+                    document.getElementById('pub-anam-alergias').value = hc.alergias || '';
+                    
+                    // Rellenar enfermedades
+                    let enfArray = (hc.enfermedades || '').split(', ').map(x=>x.trim()).filter(x=>x);
+                    document.querySelectorAll('.anam-chk').forEach(chk => {
+                        if(enfArray.includes(chk.value)) {
+                            chk.checked = true;
+                            enfArray = enfArray.filter(x => x !== chk.value);
+                        }
+                    });
+                    
+                    // Otras enfermedades
+                    let otrasEnf = enfArray.filter(x => x && !['Diabetes','Hipertensión','Asma','Problemas Cardíacos','Problemas de Coagulación'].includes(x));
+                    document.getElementById('pub-anam-enf-otros').value = otrasEnf.join(', ');
+
+                    // Cargar cláusulas de consentimiento
+                    if(hc.consentData) {
+                        for(let i=1; i<=10; i++) {
+                            let el = document.getElementById('pub-anam-c'+i);
+                            if(el) el.checked = hc.consentData['c'+i] || false;
                         }
                     }
                 }
+                
+                document.getElementById('panelAnamnesisPaciente').style.display = 'block';
+                document.getElementById('mensajeExitoAnamnesis').style.display = 'none';
+                document.getElementById('mensajeErrorLink').style.display = 'none';
             },
 
             submitPublicAnamnesis: function() {
-                // Verificar que ha llenado al menos algo
+                // VALIDAR QUE HAYA LLENADO DATOS MÍNIMOS
                 let motivo = document.getElementById('pub-anam-motivo').value.trim();
-                let alergias = document.getElementById('pub-anam-alergias').value.trim();
+                if(!motivo) return alert("⚠️ Por favor, describe el motivo de tu consulta.");
                 
+                // VALIDAR QUE HAYA ACEPTADO AL MENOS 70% DE LAS CLÁUSULAS
                 let consentData = {};
+                let consentCount = 0;
                 for(let i=1; i<=10; i++) {
-                    consentData['c'+i] = document.getElementById('pub-anam-c'+i).checked;
+                    let chk = document.getElementById('pub-anam-c'+i);
+                    if(chk) {
+                        consentData['c'+i] = chk.checked;
+                        if(chk.checked) consentCount++;
+                    }
+                }
+                
+                if(consentCount < 7) {
+                    return alert("⚠️ Debes aceptar al menos 7 de las 10 cláusulas para proceder. Esto protege tu salud y la de la clínica.");
                 }
 
+                // RECOLECTAR ENFERMEDADES
                 let enfArray = [];
                 document.querySelectorAll('.anam-chk:checked').forEach(chk => enfArray.push(chk.value));
                 let enfOtros = document.getElementById('pub-anam-enf-otros').value.trim();
                 if(enfOtros) enfArray.push(enfOtros);
-                let enfermedadesFinal = enfArray.join(', ');
+                let enfermedadesFinal = enfArray.length > 0 ? enfArray.join(', ') : 'Ninguna reportada';
+
+                let alergias = document.getElementById('pub-anam-alergias').value.trim() || 'Ninguna reportada';
 
                 let tokenStr = document.getElementById('pub-anam-token').value;
                 this.data.tokens = safeData('db_tokens', []);
                 this.data.hc = safeData('db_hc', {});
 
                 let tk = this.data.tokens.find(x => x.token === tokenStr && x.type === 'anam');
-                if(!tk || tk.used) return alert("Este enlace ya fue procesado.");
+                if(!tk || tk.used) {
+                    alert("❌ Este enlace ya fue procesado o es inválido. Si necesitas actualizar tu información, solicita un nuevo enlace a la clínica.");
+                    return;
+                }
 
                 let pid = tk.patId;
+                if(!pid) {
+                    alert("❌ Error: Paciente no identificado. Solicita un nuevo enlace.");
+                    return;
+                }
+
+                let pat = this.data.patients.find(p => p.id == pid);
+                if(!pat) {
+                    alert("❌ Error: Paciente no encontrado en el sistema. Contacta a la clínica.");
+                    return;
+                }
+
                 if(!this.data.hc[pid]) {
                     this.data.hc[pid] = { motivo:'', enfermedades:'', alergias:'', extraoral:'', intraoral:'', ortodoncia: false, evolutions: [], budget: [], payments: [], payInfo: {cuotas:'', tiempo:'', total:0}, consentData: {} };
                 }
 
-                // Guardar Data en HC
+                // GUARDAR DATA EN HC
                 this.data.hc[pid].motivo = motivo;
                 this.data.hc[pid].enfermedades = enfermedadesFinal;
                 this.data.hc[pid].alergias = alergias;
                 this.data.hc[pid].consentimiento = new Date().toLocaleString('es-PE'); 
                 this.data.hc[pid].consentData = consentData;
+                this.data.hc[pid].anamFechaRespuesta = new Date().toISOString(); // PARA TRACKING
                 
                 tk.used = true; // QUEMAR TOKEN
                 this.saveDB();
 
                 document.getElementById('panelAnamnesisPaciente').style.display = 'none';
                 document.getElementById('mensajeExitoAnamnesis').style.display = 'block';
+                
+                // MOSTRAR CONFIRMACIÓN CON DATOS
+                setTimeout(() => {
+                    alert(`✅ Datos recibidos correctamente para ${pat.name}\n\nMotivo: ${motivo.substring(0, 50)}...\n\nLa clínica verá toda tu información en tu próxima cita.`);
+                }, 500);
             },
 
             // === FUNCIONES EN TIEMPO REAL Y LIMPIEZA ===
@@ -1345,50 +1504,88 @@
                 let h = params.get('hora');
 
                 if(!id) {
-                    document.getElementById('panelAccionPaciente').innerHTML = "<p>Enlace inválido o expirado.</p>";
+                    document.getElementById('panelAccionPaciente').style.display = 'none';
+                    document.getElementById('mensajeExitoPaciente').style.display = 'block';
+                    document.getElementById('tituloExito').innerText = "❌ Enlace inválido";
+                    document.getElementById('txtFinal').innerText = "No se encontraron datos de la cita. Verifica el enlace o solicita uno nuevo a la clínica.";
                     return;
                 }
 
+                // CARGAR DATOS ACTUALIZADOS DE CITAS
+                this.data.apps = safeData('db_app', []);
+                
                 let index = this.data.apps.findIndex(a => a.id == id);
-                if(index !== -1 && this.data.apps[index].status !== 'Pendiente') {
+                if(index === -1) {
+                    document.getElementById('panelAccionPaciente').style.display = 'none';
+                    document.getElementById('mensajeExitoPaciente').style.display = 'block';
+                    document.getElementById('tituloExito').innerText = "Cita no encontrada";
+                    document.getElementById('txtFinal').innerText = "No se encontró la cita. Si crees que es un error, contacta a la clínica.";
+                    return;
+                }
+
+                let appData = this.data.apps[index];
+                
+                // SI YA FUE RESPONDIDA
+                if(appData.status !== 'Pendiente') {
                     document.getElementById('panelAccionPaciente').style.display = 'none';
                     document.getElementById('mensajeExitoPaciente').style.display = 'block';
                     document.getElementById('tituloExito').innerText = "Respuesta ya registrada";
-                    document.getElementById('txtFinal').innerText = "Ya has respondido a esta cita anteriormente. ¡Gracias por avisarnos!";
+                    document.getElementById('txtFinal').innerText = `Tu estado actual es: ${appData.status === 'Confirmada' ? '✓ Confirmado' : '✗ ' + appData.status}.\n\nSi necesitas cambiar tu respuesta, contacta a la clínica.`;
                     return;
                 }
 
-                document.getElementById('lblPaciente').innerText = pac;
-                document.getElementById('lblFecha').innerText = f ? f.split('-').reverse().join('/') : '';
-                document.getElementById('lblHora').innerText = this.formatTime12h(h);
+                document.getElementById('lblPaciente').innerText = pac || appData.patName;
+                document.getElementById('lblFecha').innerText = f ? f.split('-').reverse().join('/') : this.formatDate(appData.date);
+                document.getElementById('lblHora').innerText = this.formatTime12h(h || appData.time);
                 document.getElementById('confirmScreen').setAttribute('data-cita-id', id);
+                
+                document.getElementById('panelAccionPaciente').style.display = 'block';
+                document.getElementById('mensajeExitoPaciente').style.display = 'none';
             },
 
             responderCita: function(estado) {
                 let idCita = document.getElementById('confirmScreen').getAttribute('data-cita-id');
-                if(!idCita) return;
+                if(!idCita) {
+                    alert("❌ Error: ID de cita no encontrado");
+                    return;
+                }
 
+                // CARGAR DATOS ACTUALIZADOS
                 this.data.apps = safeData('db_app', []);
                 
                 let index = this.data.apps.findIndex(a => a.id == idCita);
-                if(index !== -1) {
-                    if (this.data.apps[index].status !== 'Pendiente') {
-                        alert("Esta cita ya fue respondida.");
-                        window.location.reload();
-                        return;
-                    }
-
-                    this.data.apps[index].status = estado === 'Reprogramar' ? 'Reprogramar' : 'Confirmada';
-                    if(estado === 'Reprogramar' && !this.data.apps[index].treat.includes("[REPROGRAMAR]")) {
-                        this.data.apps[index].treat = "[REPROGRAMAR] " + this.data.apps[index].treat;
-                    }
-                    this.saveDB(); 
+                if(index === -1) {
+                    alert("❌ Cita no encontrada");
+                    window.location.reload();
+                    return;
                 }
+
+                if (this.data.apps[index].status !== 'Pendiente') {
+                    alert("⚠️ Esta cita ya fue respondida anteriormente.");
+                    window.location.reload();
+                    return;
+                }
+
+                // REGISTRAR RESPUESTA
+                this.data.apps[index].status = estado === 'Reprogramar' ? 'Reprogramar' : 'Confirmada';
+                this.data.apps[index].respuestaFecha = new Date().toISOString();
+                this.data.apps[index].respuestaEstado = estado;
+                
+                if(estado === 'Reprogramar' && !this.data.apps[index].treat.includes("[REPROGRAMAR]")) {
+                    this.data.apps[index].treat = "[REPROGRAMAR] " + this.data.apps[index].treat;
+                }
+                
+                this.saveDB();
 
                 document.getElementById('panelAccionPaciente').style.display = 'none';
                 document.getElementById('mensajeExitoPaciente').style.display = 'block';
-                if(estado === 'Reprogramar') {
-                    document.getElementById('txtFinal').innerText = "Nos comunicaremos contigo lo más pronto posible para agendar un nuevo horario.";
+                
+                if(estado === 'Confirmada') {
+                    document.getElementById('tituloExito').innerText = '✓ ¡Gracias por confirmar!';
+                    document.getElementById('txtFinal').innerText = "Tu asistencia ha sido registrada. Te esperamos en la clínica a la hora y fecha acordadas.";
+                } else {
+                    document.getElementById('tituloExito').innerText = '📅 Reprogramación Solicitada';
+                    document.getElementById('txtFinal').innerText = "Nos comunicaremos contigo lo más pronto posible para agendar un nuevo horario que te sea conveniente.";
                 }
             },
 

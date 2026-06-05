@@ -1,52 +1,199 @@
 ╔════════════════════════════════════════════════════════════════════════════════╗
 ║                  DOCTOCLIQ PRO - SISTEMA DENTAL COMPLETO                       ║
-║                      GUÍA RÁPIDA DE INICIO DE SESIÓN                           ║
+║                   GUÍA RÁPIDA - ACCESO Y PRIMEROS PASOS                        ║
 ╚════════════════════════════════════════════════════════════════════════════════╝
 
 📂 ARCHIVO PRINCIPAL:
    → index.html
 
-🚀 CÓMO ABRIR EL SISTEMA:
-   1. Abre el archivo "index.html" en tu navegador web (Chrome, Firefox, Edge)
-   2. El sistema cargará automáticamente
+🚀 PARA ACCEDER:
+
+   EN LOCAL (En tu computadora):
+   • Abre "index.html" en tu navegador (Chrome, Firefox, Edge, Safari)
+   • El sistema cargará automáticamente
+
+   EN RAILWAY (Producción Online):
+   • URL: https://tu-proyecto.up.railway.app
+   • Accede desde cualquier navegador
+   • Funciona en Desktop, Tablet y Móvil
 
 🔐 CREDENCIALES DE ACCESO:
    Usuario:     admin
    Contraseña:  admin
 
-   (Estos datos pueden cambiarse en el código)
+═══════════════════════════════════════════════════════════════════════════════
+
+📱 ENVIAR LINKS A PACIENTES POR WHATSAPP:
+
+1. LINK DE REGISTRO (Nuevo Paciente)
+   Panel → Pacientes Activos → "Enviar Link Registro"
+   → Ingresa número (9 dígitos)
+   → Se abre WhatsApp automáticamente
+
+2. LINK DE CUESTIONARIO (Anamnesis + Consentimiento)
+   Panel → Historia Clínica → Selecciona paciente
+   → "Link Cuestionario"
+   → Se envía automáticamente
+
+3. LINK DE CONFIRMACIÓN DE CITA
+   Panel → Agenda → Click en botón verde de WhatsApp
+   → Se abre con el link precargado
 
 ═══════════════════════════════════════════════════════════════════════════════
 
-✨ CARACTERÍSTICAS PRINCIPALES:
+✨ LO QUE PUEDES HACER:
 
 1️⃣  PACIENTES
-   • Registro con DNI, teléfono, email, dirección
-   • Búsqueda rápida por nombre, DNI o teléfono
-   • Historial de citas por paciente
-   • Validación de DNI único
+   • Registrar con DNI, edad, teléfono
+   • Buscar por nombre, DNI o teléfono
+   • Enviar link de registro por WhatsApp
+   • Ver historial de citas
 
 2️⃣  AGENDA Y CITAS
-   • Agendamiento con fecha y hora
-   • Cambiar estado: Pendiente → Confirmada
-   • Enviar recordatorio por WhatsApp
-   • Prevención de citas duplicadas
+   • Agendar citas con fecha y hora
+   • Ver confirmaciones de pacientes
+   • Cambiar estado de cita
+   • Enviar aviso por WhatsApp
 
-3️⃣  ODONTOGRAMA DIGITAL
-   • 32 dientes con 5 caras cada uno
-   • Estados: Sano, Caries, Curado, Extracción
-   • Carga INSTANTÁNEA
+3️⃣  CUESTIONARIO Y CONSENTIMIENTO
+   • Paciente completa sus antecedentes
+   • Firma digital el acta de consentimiento
+   • Datos guardados en historia clínica
+   • Puedes revisar antes de atender
+
+4️⃣  ODONTOGRAMA DIGITAL
+   • 32 dientes con 5 caras
+   • Estados: Sano, Caries, Curado, Extracción, Bracket
    • Guardado automático
 
-4️⃣  RECETARIO
-   • Emisión de recetas profesionales
-   • Impresión en formato hospitalario
+5️⃣  HISTORIA CLÍNICA INTEGRAL
+   • Evaluación médica inicial
+   • Presupuesto de tratamientos
+   • Plan de evolución (sesiones)
+   • Control de pagos
+   • Acta de consentimiento
+
+6️⃣  RECETARIO
+   • Redactar recetas profesionales
+   • Impresión formateada
    • Historial completo
 
-5️⃣  TRATAMIENTOS Y PRECIOS
-   • Catálogo de servicios
-   • 6 especialidades incluidas
-   • Precios ajustables
+7️⃣  FINANZAS
+   • Registro de ingresos/egresos
+   • Balance de caja
+   • Métodos de pago
+   • Reportes
+
+8️⃣  INVENTARIO
+   • Control de insumos
+   • Stock en tiempo real
+   • Alertas de bajo stock
+
+═══════════════════════════════════════════════════════════════════════════════
+
+🎯 FLUJO RECOMENDADO:
+
+PASO 1: Registra un paciente nuevo
+        → Panel → Pacientes → "Registrar Manual"
+
+PASO 2: Envía link de registro por WhatsApp
+        → "Enviar Link Registro"
+        → Paciente completa sus datos
+
+PASO 3: Envía link de cuestionario
+        → Historia Clínica → "Link Cuestionario"
+        → Paciente completa anamnesis
+
+PASO 4: Agenda una cita
+        → Agenda Médica → "Agendar Cita"
+        → Selecciona paciente, fecha, hora
+
+PASO 5: Envía confirmación por WhatsApp
+        → Click en botón verde de WhatsApp
+        → Paciente confirma desde su móvil
+
+PASO 6: Ve las respuestas
+        → Respuestas de Citas
+        → Confirmada, Reprogramar o Pendiente
+
+═══════════════════════════════════════════════════════════════════════════════
+
+⚙️ CONFIGURACIÓN:
+
+• LOGO: Panel → Ajustes → Subir logo de tu clínica
+• TEMA: Click en "Modo Oscuro" (esquina inferior izquierda)
+• TRATAMIENTOS: Panel → Tratamientos → Agregar nuevos servicios
+
+═══════════════════════════════════════════════════════════════════════════════
+
+💾 DATOS:
+
+• TODO se guarda en el navegador (localStorage)
+• No necesitas servidor de base de datos
+• Backup manual: Panel → Ajustes → "Limpiar Caché"
+• Los datos persisten aunque cierres el navegador
+
+═══════════════════════════════════════════════════════════════════════════════
+
+📱 COMPATIBLE CON:
+
+✅ Chrome (Desktop y Mobile)
+✅ Firefox (Desktop y Mobile)
+✅ Safari (Mac, iPhone, iPad)
+✅ Edge (Desktop)
+✅ Tablet y Smartphone
+✅ Railway (producción online)
+
+═══════════════════════════════════════════════════════════════════════════════
+
+🆘 PROBLEMAS COMUNES:
+
+❌ "No se abre WhatsApp"
+   ✓ Asegúrate de tener WhatsApp Web instalado
+   ✓ Intenta en Chrome o Firefox
+   ✓ Verifica que el número sea correcto
+
+❌ "El link no funciona"
+   ✓ Copia la URL completa de Railway
+   ✓ Incluye https://
+   ✓ Prueba en otro navegador
+
+❌ "Se perdieron los datos"
+   ✓ Los datos están en localStorage
+   ✓ No borres el caché del navegador
+   ✓ Usa "Limpiar Caché" en Ajustes para backup
+
+═══════════════════════════════════════════════════════════════════════════════
+
+✅ VALIDACIONES IMPORTANTES:
+
+• DNI: Mínimo 8 caracteres
+• Nombre: Mínimo 5 caracteres
+• Edad: 1-120 años
+• Cuestionario: Requiere aceptar 7/10 cláusulas
+• Teléfono: Mínimo 7 dígitos
+
+═══════════════════════════════════════════════════════════════════════════════
+
+🎉 ¡LISTO PARA USAR!
+
+Tu sistema está 100% funcional. Comienza ahora:
+
+1. Abre index.html (o tu URL de Railway)
+2. Ingresa: admin / admin
+3. ¡Empieza a registrar pacientes!
+
+═══════════════════════════════════════════════════════════════════════════════
+
+📚 DOCUMENTACIÓN COMPLETA:
+   • README.md - Guía detallada
+   • INSTRUCCIONES_RAILWAY.md - Cómo usar en Railway
+   • CAMBIOS_REALIZADOS.md - Detalles técnicos
+
+═══════════════════════════════════════════════════════════════════════════════
+
+Última actualización: 2026-06-05
+Estado: ✅ SISTEMA 100% FUNCIONAL
 
 6️⃣  MÓDULO DE FINANZAS
    • Ingresos y egresos
