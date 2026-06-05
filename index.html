@@ -636,6 +636,9 @@
                                     <h3 style="font-size: 18px; font-weight: 800; color:var(--primary);">Bandeja de Confirmaciones</h3>
                                     <p style="font-size: 13px; color: var(--text-muted); margin-top:4px;" id="conf-selected-title">Mostrando respuestas para: Hoy</p>
                                 </div>
+                                <button class="btn-small" onclick="window.app.renderConfirmations()" style="background:var(--primary); color:white; border:none; cursor:pointer; display:flex; align-items:center; gap:6px;">
+                                    <i class="fa-solid fa-rotate-right"></i> Actualizar
+                                </button>
                             </div>
                             <div class="table-container" style="border: none; border-radius: 0 0 16px 16px;">
                                 <table id="confirmations-table">
@@ -1552,6 +1555,7 @@
 
                 // CARGAR DATOS ACTUALIZADOS
                 this.data.apps = safeData('db_app', []);
+                this.data.patients = safeData('db_pat', []);
                 
                 let index = this.data.apps.findIndex(a => a.id == idCita);
                 if(index === -1) {
@@ -1566,16 +1570,23 @@
                     return;
                 }
 
-                // REGISTRAR RESPUESTA
+                // REGISTRAR RESPUESTA CON TODOS LOS CAMPOS NECESARIOS
                 this.data.apps[index].status = estado === 'Reprogramar' ? 'Reprogramar' : 'Confirmada';
                 this.data.apps[index].respuestaFecha = new Date().toISOString();
                 this.data.apps[index].respuestaEstado = estado;
+                this.data.apps[index].respondedAt = new Date().toLocaleString('es-PE');
                 
-                if(estado === 'Reprogramar' && !this.data.apps[index].treat.includes("[REPROGRAMAR]")) {
-                    this.data.apps[index].treat = "[REPROGRAMAR] " + this.data.apps[index].treat;
+                if(estado === 'Reprogramar') {
+                    if(!this.data.apps[index].treat.includes("[REPROGRAMAR]")) {
+                        this.data.apps[index].treat = "[REPROGRAMAR] " + this.data.apps[index].treat;
+                    }
                 }
                 
+                // GUARDAR A LOCALSTORAGE
                 this.saveDB();
+                
+                // CONFIRMAR GUARDADO
+                console.log('✅ Respuesta guardada:', this.data.apps[index]);
 
                 document.getElementById('panelAccionPaciente').style.display = 'none';
                 document.getElementById('mensajeExitoPaciente').style.display = 'block';
@@ -1587,6 +1598,14 @@
                     document.getElementById('tituloExito').innerText = '📅 Reprogramación Solicitada';
                     document.getElementById('txtFinal').innerText = "Nos comunicaremos contigo lo más pronto posible para agendar un nuevo horario que te sea conveniente.";
                 }
+                
+                // REDIRIGIR AL ADMIN DESPUÉS DE 2 SEGUNDOS (O MOSTRAR ENLACE PARA SALIR)
+                setTimeout(() => {
+                    let btnVolver = document.createElement('div');
+                    btnVolver.style.cssText = 'margin-top:20px; text-align:center;';
+                    btnVolver.innerHTML = '<button class="btn-large" onclick="window.location.href=window.location.pathname">← Volver a Home</button>';
+                    document.getElementById('mensajeExitoPaciente').appendChild(btnVolver);
+                }, 1500);
             },
 
             toggleTheme: function(checkbox) { 
@@ -1879,7 +1898,11 @@
                 if(view === 'patients') this.renderPat(); 
                 if(view === 'archived') this.renderArchived(); 
                 if(view === 'appointments') this.renderAgenda(); 
-                if(view === 'confirmations') this.renderConfirmations();
+                if(view === 'confirmations') { 
+                    // ⭐ RECARGAR DATOS ANTES DE RENDERIZAR
+                    this.data.apps = safeData('db_app', []);
+                    this.renderConfirmations();
+                }
                 if(view === 'treatments') this.renderTreats(); 
                 if(view === 'finances') this.renderFin(); 
                 if(view === 'inventory') this.renderInv(); 
@@ -2343,6 +2366,9 @@
 
             // --- CONFIRMACIONES ---
             renderConfirmations: function() {
+                // ⭐ RECARGAR DATOS DE LOCALSTORAGE PARA VER RESPUESTAS NUEVAS ⭐
+                this.data.apps = safeData('db_app', []);
+                
                 this.generateCalendarGrid(this.currentDateConf, 'conf-cal-days', this.selectedDateConf, 'conf');
                 
                 let titleDate = this.selectedDateConf === this.getLocalDateISO() ? 'Hoy' : this.formatDate(this.selectedDateConf);
@@ -2360,12 +2386,18 @@
 
                     let badgeRespuesta = '';
                     let accionRapida = '';
+                    
+                    let timestampText = '';
+                    if(a.respuestaFecha) {
+                        let fecha = new Date(a.respuestaFecha);
+                        timestampText = `<span style="font-size:11px; color:#666; margin-top:4px; display:block;">⏰ ${fecha.toLocaleString('es-PE')}</span>`;
+                    }
 
                     if(isRepro) {
                         countRes++;
                         badgeRespuesta = `<div style="background: rgba(234, 88, 12, 0.15); color: #ea580c; padding: 10px; border-radius: 8px; border: 1px dashed var(--warning); display: inline-block;">
                             <strong style="display:block; font-size:14px;"><i class="fa-solid fa-triangle-exclamation"></i> Requiere Reprogramar</strong>
-                            <span style="font-size:12px;">El paciente no podrá asistir.</span>
+                            <span style="font-size:12px;">El paciente no podrá asistir.${timestampText}</span>
                         </div>`;
                         let waMsg = encodeURIComponent(`Hola ${a.patName}, veo que solicitaste reprogramar tu cita. ¿Para qué día y hora te gustaría agendarla?`);
                         accionRapida = `<a href="https://wa.me/51${(a.phone||'').replace(/\D/g,'')}?text=${waMsg}" target="_blank" class="btn btn-outline" style="color:#ea580c; border-color:#ea580c;"><i class="fa-brands fa-whatsapp"></i> Hablar para re-agendar</a>
@@ -2374,7 +2406,7 @@
                         countOk++;
                         badgeRespuesta = `<div style="background: rgba(16, 185, 129, 0.15); color: var(--success); padding: 10px; border-radius: 8px; border: 1px solid var(--success); display: inline-block;">
                             <strong style="display:block; font-size:14px;"><i class="fa-solid fa-check-circle"></i> Asistencia Confirmada</strong>
-                            <span style="font-size:12px;">El paciente te espera a la hora acordada.</span>
+                            <span style="font-size:12px;">El paciente te espera a la hora acordada.${timestampText}</span>
                         </div>`;
                         accionRapida = `<span style="color:var(--text-muted); font-size:12px;"><i class="fa-solid fa-thumbs-up"></i> Todo listo</span>`;
                     } else {
