@@ -1,6 +1,6 @@
 // ====================================
-// BACKEND PROFESIONAL - DOCTOCLIQ
-// Sincronización en tiempo real
+// SERVIDOR BACKEND - DOCTOCLIQ PRO
+// Sincronización en tiempo real v2.3
 // ====================================
 
 const express = require('express');
@@ -14,7 +14,7 @@ const PORT = process.env.PORT || 3000;
 
 // Middleware
 app.use(cors());
-app.use(express.json());
+app.use(express.json({ limit: '10mb' }));
 app.use(express.static('.'));
 
 // ====================================
@@ -24,18 +24,34 @@ app.use(express.static('.'));
 const dbPath = path.join(__dirname, 'doctocliq.db');
 const db = new sqlite3.Database(dbPath, (err) => {
     if (err) console.error('❌ Error conectando DB:', err);
-    else console.log('✅ Base de datos conectada:', dbPath);
+    else console.log('✅ Base de datos conectada');
 });
 
-// Crear tablas si no existen
+// Crear tablas
 db.serialize(() => {
-    // Tabla de respuestas de citas
+    // Tabla de CITAS (para que el paciente pueda acceder)
+    db.run(`
+        CREATE TABLE IF NOT EXISTS citas (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            token TEXT UNIQUE NOT NULL,
+            cita_id TEXT NOT NULL,
+            paciente_nombre TEXT NOT NULL,
+            paciente_phone TEXT,
+            fecha TEXT,
+            hora TEXT,
+            tratamiento TEXT,
+            estado TEXT DEFAULT 'Pendiente',
+            fecha_creacion DATETIME DEFAULT CURRENT_TIMESTAMP
+        )
+    `);
+
+    // Tabla de RESPUESTAS (confirmaciones del paciente)
     db.run(`
         CREATE TABLE IF NOT EXISTS respuestas_citas (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
-            token TEXT UNIQUE,
-            cita_id TEXT,
-            paciente_nombre TEXT,
+            token TEXT UNIQUE NOT NULL,
+            cita_id TEXT NOT NULL,
+            paciente_nombre TEXT NOT NULL,
             paciente_phone TEXT,
             respuesta TEXT,
             fecha_respuesta DATETIME DEFAULT CURRENT_TIMESTAMP,
@@ -43,35 +59,58 @@ db.serialize(() => {
         )
     `);
 
-    // Tabla de registro de pacientes
-    db.run(`
-        CREATE TABLE IF NOT EXISTS registros_pacientes (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            token TEXT UNIQUE,
-            dni TEXT,
-            nombre TEXT,
-            edad INTEGER,
-            phone TEXT,
-            fecha_registro DATETIME DEFAULT CURRENT_TIMESTAMP,
-            datos_json TEXT
-        )
-    `);
-
-    // Tabla de cuestionarios
-    db.run(`
-        CREATE TABLE IF NOT EXISTS cuestionarios (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            token TEXT UNIQUE,
-            paciente_dni TEXT,
-            motivo TEXT,
-            enfermedades TEXT,
-            alergias TEXT,
-            consentimiento_json TEXT,
-            fecha_envio DATETIME DEFAULT CURRENT_TIMESTAMP
-        )
-    `);
-
     console.log('✅ Tablas de base de datos inicializadas');
+});
+
+// ====================================
+// API: GUARDAR NUEVA CITA (desde admin)
+// ====================================
+app.post('/api/crear-cita', (req, res) => {
+    const { token, cita_id, paciente_nombre, paciente_phone, fecha, hora, tratamiento } = req.body;
+
+    if (!token || !cita_id || !paciente_nombre) {
+        return res.status(400).json({ error: 'Faltan datos requeridos' });
+    }
+
+    db.run(
+        `INSERT INTO citas (token, cita_id, paciente_nombre, paciente_phone, fecha, hora, tratamiento) 
+         VALUES (?, ?, ?, ?, ?, ?, ?)`,
+        [token, cita_id, paciente_nombre, paciente_phone, fecha, hora, tratamiento],
+        function(err) {
+            if (err) {
+                console.error('❌ Error guardando cita:', err);
+                return res.status(500).json({ error: 'Error al guardar cita' });
+            }
+            console.log(`✅ Cita guardada - Paciente: ${paciente_nombre} - Token: ${token}`);
+            res.json({ success: true, id: this.lastID, token: token });
+        }
+    );
+});
+
+// ====================================
+// API: OBTENER CITA POR TOKEN (para paciente)
+// ====================================
+app.get('/api/cita/:token', (req, res) => {
+    const { token } = req.params;
+
+    db.get(
+        `SELECT * FROM citas WHERE token = ?`,
+        [token],
+        (err, row) => {
+            if (err) {
+                console.error('❌ Error obteniendo cita:', err);
+                return res.status(500).json({ error: 'Error al consultar cita' });
+            }
+            
+            if (!row) {
+                console.warn(`⚠️ Cita no encontrada - Token: ${token}`);
+                return res.status(404).json({ error: 'Cita no encontrada', cita_id: null });
+            }
+            
+            console.log(`✅ Cita encontrada - ${row.paciente_nombre}`);
+            res.json(row);
+        }
+    );
 });
 
 // ====================================
@@ -88,13 +127,20 @@ app.post('/api/responder-cita', (req, res) => {
         `INSERT INTO respuestas_citas 
          (token, cita_id, paciente_nombre, paciente_phone, respuesta, datos_json) 
          VALUES (?, ?, ?, ?, ?, ?)`,
-        [token, cita_id, paciente_nombre, paciente_phone, respuesta, JSON.stringify(datos_json)],
+        [token, cita_id || 'N/A', paciente_nombre || 'N/A', paciente_phone || 'N/A', respuesta, JSON.stringify(datos_json)],
         function(err) {
             if (err) {
                 console.error('❌ Error guardando respuesta:', err);
                 return res.status(500).json({ error: 'Error al guardar respuesta' });
             }
-            console.log(`✅ Respuesta guardada - Paciente: ${paciente_nombre} - Respuesta: ${respuesta}`);
+            console.log(`✅ Respuesta guardada - ${paciente_nombre || 'Paciente'}: ${respuesta}`);
+            
+            // Actualizar estado de la cita
+            db.run(
+                `UPDATE citas SET estado = ? WHERE token = ?`,
+                [respuesta === 'Confirmada' ? 'Confirmada' : 'Reprogramar', token]
+            );
+            
             res.json({ 
                 success: true, 
                 id: this.lastID,
@@ -121,104 +167,33 @@ app.get('/api/respuestas-citas', (req, res) => {
 });
 
 // ====================================
-// API: OBTENER RESPUESTA POR TOKEN
+// API: OBTENER CITAS DEL DÍA
 // ====================================
-app.get('/api/respuesta/:token', (req, res) => {
-    const { token } = req.params;
-
-    db.get(
-        `SELECT * FROM respuestas_citas WHERE token = ?`,
-        [token],
-        (err, row) => {
-            if (err) {
-                console.error('❌ Error:', err);
-                return res.status(500).json({ error: 'Error al consultar' });
-            }
-            res.json(row || null);
-        }
-    );
-});
-
-// ====================================
-// API: GUARDAR REGISTRO DE PACIENTE
-// ====================================
-app.post('/api/registrar-paciente', (req, res) => {
-    const { token, dni, nombre, edad, phone, datos_json } = req.body;
-
-    if (!token || !dni || !nombre) {
-        return res.status(400).json({ error: 'Faltan datos requeridos' });
-    }
-
-    db.run(
-        `INSERT INTO registros_pacientes 
-         (token, dni, nombre, edad, phone, datos_json) 
-         VALUES (?, ?, ?, ?, ?, ?)`,
-        [token, dni, nombre, edad, phone, JSON.stringify(datos_json)],
-        function(err) {
-            if (err) {
-                console.error('❌ Error guardando paciente:', err);
-                return res.status(500).json({ error: 'Error al guardar' });
-            }
-            console.log(`✅ Paciente registrado - DNI: ${dni} - Nombre: ${nombre}`);
-            res.json({ success: true, id: this.lastID });
-        }
-    );
-});
-
-// ====================================
-// API: GUARDAR CUESTIONARIO
-// ====================================
-app.post('/api/guardar-cuestionario', (req, res) => {
-    const { token, paciente_dni, motivo, enfermedades, alergias, consentimiento_json } = req.body;
-
-    if (!token || !paciente_dni) {
-        return res.status(400).json({ error: 'Faltan datos requeridos' });
-    }
-
-    db.run(
-        `INSERT INTO cuestionarios 
-         (token, paciente_dni, motivo, enfermedades, alergias, consentimiento_json) 
-         VALUES (?, ?, ?, ?, ?, ?)`,
-        [token, paciente_dni, motivo, enfermedades, alergias, JSON.stringify(consentimiento_json)],
-        function(err) {
-            if (err) {
-                console.error('❌ Error guardando cuestionario:', err);
-                return res.status(500).json({ error: 'Error al guardar' });
-            }
-            console.log(`✅ Cuestionario guardado - DNI: ${paciente_dni}`);
-            res.json({ success: true, id: this.lastID });
-        }
-    );
-});
-
-// ====================================
-// API: WEBHOOK PARA SINCRONIZAR
-// ====================================
-app.get('/api/sync-respuestas', (req, res) => {
-    const desde = req.query.desde || 0;
+app.get('/api/citas-dia', (req, res) => {
+    const fecha = req.query.fecha || new Date().toISOString().split('T')[0];
     
     db.all(
-        `SELECT * FROM respuestas_citas 
-         WHERE id > ? 
-         ORDER BY fecha_respuesta DESC 
-         LIMIT 50`,
-        [desde],
+        `SELECT * FROM citas WHERE fecha = ? ORDER BY hora ASC`,
+        [fecha],
         (err, rows) => {
             if (err) {
+                console.error('❌ Error obteniendo citas:', err);
                 return res.status(500).json({ error: 'Error' });
             }
-            res.json({
-                respuestas: rows || [],
-                ultima_id: rows && rows.length > 0 ? rows[rows.length - 1].id : desde
-            });
+            res.json(rows || []);
         }
     );
 });
 
 // ====================================
-// SERVIR ARCHIVO HTML PRINCIPAL
+// SERVIR ARCHIVO HTML
 // ====================================
 app.get('/', (req, res) => {
+    res.sendFile(path.join(__dirname, 'index.html'));
+});
+
+app.get('/*', (req, res) => {
+    // Servir index.html para todas las rutas (para rutas con parámetros)
     res.sendFile(path.join(__dirname, 'index.html'));
 });
 
@@ -228,17 +203,18 @@ app.get('/', (req, res) => {
 app.listen(PORT, () => {
     console.log(`
 ╔════════════════════════════════════════╗
-║   🦷 DOCTOCLIQ PRO - BACKEND ACTIVO   ║
-╠════════════════════════════════════════╣
+║   🦷 DOCTOCLIQ PRO - SINCRONIZACIÓN   ║
+╠═══════════════════════════════════��════╣
 ║   📍 Servidor: http://localhost:${PORT}     
 ║   💾 Base de datos: SQLite
-║   🔄 Sincronización: En tiempo real
+║   🔄 Sincronización: 100% En tiempo real
 ║   ✅ Status: LISTO PARA PRODUCCIÓN
+║   ✨ v2.3 - Con búsqueda de citas
 ╚════════════════════════════════════════╝
     `);
 });
 
-// Manejar cierre de BD
+// Cierre de BD
 process.on('SIGINT', () => {
     db.close((err) => {
         if (err) console.error(err);
